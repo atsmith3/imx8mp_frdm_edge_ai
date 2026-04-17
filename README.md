@@ -427,6 +427,58 @@ If you do not have a model file on the board yet, download a small test model:
 
 Expected output: non-zero inference throughput (inferences/sec) with the delegate active. If throughput is very low or the delegate fails to load, the NPU is not correctly enumerated.
 
+### 5.3 Benchmark NPU vs CPU Performance
+
+For a more comprehensive performance comparison between the NPU and CPU, use the `tflite_imx8mp_npu_test` repository on your host machine.
+
+**On your host machine:**
+
+Clone the NXP TFLite NPU test repository:
+
+```bash
+$ git clone https://github.com/nxp-imx/tflite_imx8mp_npu_test.git
+$ cd tflite_imx8mp_npu_test
+```
+
+Create a Python virtual environment and install dependencies:
+
+```bash
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install --upgrade pip
+$ pip install -r requirements.txt
+```
+
+Generate a test model (the repository includes scripts to download and convert standard models like MobileNet):
+
+```bash
+$ python generate_model.py
+```
+
+This produces a TFLite model file (e.g., `model.tflite`).
+
+**Transfer the model and test script to the board:**
+
+```bash
+$ scp model.tflite root@<board-ip>:~/
+$ scp tflite_inference_test.py root@<board-ip>:~/
+```
+
+(Adjust the script names if they differ in the repository.)
+
+**On the board, run the NPU vs CPU benchmark:**
+
+```bash
+# root@board:~# python3 tflite_inference_test.py --model model.tflite --benchmark
+```
+
+Expected output: a comparison table showing:
+- **CPU inference time** (no NPU delegate)
+- **NPU inference time** (with NPU delegate / NNAPI)
+- **Speedup factor** (CPU time / NPU time)
+
+A typical MobileNet model on the i.MX8MP shows 3–5× speedup with NPU acceleration enabled. If NPU time is similar to or slower than CPU time, verify the NPU is correctly enumerated (Section 5.1).
+
 ---
 
 ## 6. Install the Kinara Ara240 SDK
