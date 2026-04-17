@@ -75,6 +75,33 @@ sudo apt-get install bmap-tools
 
 **Goal:** Build a complete `imx-image-full` Yocto image inside a reproducible Docker container with NXP BSP support and TFLite/ONNX ML tooling included.
 
+### 2.0 Quick Start: Use Pre-built Image (Optional)
+
+If you want to skip the 8-16 hour Yocto build, a pre-built image is available in the `./image/` directory. The image has been split into chunks due to git-lfs size constraints. Reconstruct it with:
+
+```bash
+$ cd ./image
+$ bash combine.sh <chunks-file> <output-image-file>
+```
+
+For example:
+```bash
+$ bash combine.sh imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.chunks imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.tar.gz
+```
+
+Then extract the tarball to retrieve the `.wic.zst` image and `.bmap` files:
+
+```bash
+$ tar -xzf imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.tar.gz
+$ ls imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245/
+imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.wic.bmap
+imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.wic.zst
+```
+
+You can now flash the `.wic.zst` image to the SD card (proceed to [Section 3](#3-flash-the-sd-card)).
+
+---
+
 ### 2.1 Build the Docker Container
 
 The Docker container isolates all Yocto host dependencies on any Linux system. The build requires a non-root user (`builder`) because Yocto refuses to run as root.
