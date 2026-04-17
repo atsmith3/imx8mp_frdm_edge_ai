@@ -181,7 +181,7 @@ Set the machine and distro variables, then initialize the build directory:
 ```bash
 $ export MACHINE=imx8mp-lpddr4-frdm
 $ export DISTRO=fsl-imx-xwayland
-$ source imx-setup-release.sh -b core-image-base-ml
+$ source imx-setup-release.sh -b build-ml
 $ cd ..
 ```
 
