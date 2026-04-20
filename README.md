@@ -767,7 +767,7 @@ Send a test inference request:
 # root@board:~# curl -X POST http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "Qwen2.5-7B-Instruct-Ara240",
+    "model": "Qwen2.5-7B-Instruct",
     "messages": [{"role": "user", "content": "Hello, what is your name?"}],
     "max_tokens": 100
   }'
@@ -783,21 +783,29 @@ Monitor accelerator utilization during inference:
 
 This shows DMA bandwidth, memory usage, and processing latency during the inference run.
 
-### 7.4 Change the Default Model
+### 7.4 Change the Active Model
 
-By default, `eiq-aaf-connector` loads a default model on startup. To change which model is loaded by default, edit the connector configuration file:
+`eiq-aaf-connector` loads whichever models have `"enabled": true` in its configuration file. By default only `Qwen2.5-7B-Instruct` is enabled. The available models are:
+
+| Model | Type | Enabled by default |
+|-------|------|--------------------|
+| `Qwen2.5-7B-Instruct` | text | yes |
+| `Qwen2.5-Coder-1.5B` | text | no |
+| `Qwen2.5-VL-7B-Instruct` | vision+language | no |
+| `qwen2_5-vl-3b-video` | video | no |
+| `qwen2.5-image-3B` | image | no |
+
+To change which model is active, edit the connector configuration file:
 
 ```bash
 # root@board:~# nano /usr/share/eiq/aaf-connector/server_config.json
 ```
 
-Look for the `default_model` field and update it to point to your desired model:
+Set `"enabled": true` on the model you want to load and `"enabled": false` on all others. For example, to switch to the coder model:
 
 ```json
-{
-  "default_model": "Qwen2.5-Coder-1.5B-Ara240",
-  ...
-}
+{ "name": "Qwen2.5-7B-Instruct", ..., "enabled": false },
+{ "name": "Qwen2.5-Coder-1.5B", ..., "enabled": true  },
 ```
 
 Save the file and restart the connector service:
@@ -806,13 +814,11 @@ Save the file and restart the connector service:
 # root@board:~# systemctl restart eiq-aaf-connector
 ```
 
-Verify the new default model is loaded:
+Verify the new active model is loaded:
 
 ```bash
 # root@board:~# curl http://localhost:8000/v1/models
 ```
-
-The response should now show your selected model in the default position.
 
 ---
 
