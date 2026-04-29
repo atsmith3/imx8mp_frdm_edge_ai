@@ -61,7 +61,7 @@ Expected output:
 
 ```
 IN-USE  BSSID              SSID      MODE   CHAN  RATE        SIGNAL  SECURITY
-        18:E8:29:97:CE:18  NXPOPEN   Infra  11    195 Mbit/s  72      WPA2
+        xx:xx:xx:xx:xx:xx  WIFI      Infra  11    195 Mbit/s  72      WPA2
         ...
 ```
 
