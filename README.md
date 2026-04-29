@@ -86,16 +86,16 @@ $ bash combine.sh <chunks-file> <output-image-file>
 
 For example:
 ```bash
-$ bash combine.sh imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.chunks imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.tar.gz
+$ bash combine.sh imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260429161415.chunks imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260429161415.tar.gz
 ```
 
 Then extract the tarball to retrieve the `.wic.zst` image and `.bmap` files:
 
 ```bash
-$ tar -xzf imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.tar.gz
-$ ls imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245/
-imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.wic.bmap
-imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260411135245.wic.zst
+$ tar -xzf imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260429161415.tar.gz
+$ ls imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260429161415/
+imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260429161415.wic.bmap
+imx-image-full-imx8mp-lpddr4-frdm.rootfs-20260429161415.wic.zst
 ```
 
 You can now flash the `.wic.zst` image to the SD card (proceed to [Section 3](#3-flash-the-sd-card)).
@@ -265,7 +265,47 @@ PARALLEL_MAKE = "-j 8"
 INHERIT += "rm_work"
 ```
 
-### 2.5 Run the Build
+### 2.5 Create the meta-custom Layer
+
+The `wpa_supplicant` recipe in this BSP ships with D-Bus support (`CONFIG_CTRL_IFACE_DBUS_NEW`) disabled in its `defconfig`. Without it, NetworkManager cannot activate wpa_supplicant via D-Bus and WiFi interfaces appear as `unavailable` in `nmcli`. Fixing this requires a recipe append — function definitions are not valid in `local.conf`, so a minimal custom layer is needed.
+
+Create the layer directory structure inside your sources tree:
+
+```bash
+$ mkdir -p sources/meta-custom/conf
+$ mkdir -p sources/meta-custom/recipes-connectivity/wpa-supplicant
+```
+
+Create `sources/meta-custom/conf/layer.conf`:
+
+```bitbake
+BBPATH .= ":${LAYERDIR}"
+BBFILES += "${LAYERDIR}/recipes-*/*/*.bb \
+            ${LAYERDIR}/recipes-*/*/*.bbappend"
+BBFILE_COLLECTIONS += "meta-custom"
+BBFILE_PATTERN_meta-custom = "^${LAYERDIR}/"
+BBFILE_PRIORITY_meta-custom = "10"
+LAYERSERIES_COMPAT_meta-custom = "whinlatter"
+```
+
+Create `sources/meta-custom/recipes-connectivity/wpa-supplicant/wpa-supplicant_%.bbappend`:
+
+```bitbake
+# Enable D-Bus control interface so NetworkManager can manage WiFi.
+# The upstream defconfig ships with CONFIG_CTRL_IFACE_DBUS_NEW commented out.
+do_configure:append () {
+    echo 'CONFIG_CTRL_IFACE_DBUS_NEW=y' >> ${S}/wpa_supplicant/.config
+    echo 'CONFIG_CTRL_IFACE_DBUS_INTRO=y' >> ${S}/wpa_supplicant/.config
+}
+```
+
+Register the layer by appending to `build-ml/conf/bblayers.conf`:
+
+```bitbake
+BBLAYERS += "${BSPDIR}/sources/meta-custom"
+```
+
+### 2.6 Run the Build
 
 Start the build inside the Docker container (make sure you are in the workspace root, not `build-ml/`):
 
@@ -376,6 +416,14 @@ For wired Ethernet:
 # root@board:~# nmcli device connect eth0
 ```
 
+For WiFi (the meta-custom layer in Section 2.5 enables this):
+
+```bash
+# root@board:~# nmcli device wifi list
+# root@board:~# nmcli device wifi connect "YOUR_SSID" password "YOUR_PASSWORD"
+```
+
+If WiFi interfaces (`mlan0`, `uap0`, `wfd0`) show as `unavailable` rather than `disconnected`, see `wifi/README.md` for diagnosis steps and a runtime workaround.
 
 Verify the connection:
 
